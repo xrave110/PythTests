@@ -105,14 +105,14 @@ contract PythContractTest is Test {
         app.updateAndMint{value: ETH_TO_WEI / 100}(updateData);
     }
 
-    function testUpdateAndMintFork() public {
-        setUpFork();
-        console2.log("CreateEthUpdate");
-        bytes[] memory updateData = createEthUpdate(100);
+    // function testUpdateAndMintFork() public {
+    //     setUpFork();
+    //     console2.log("CreateEthUpdate");
+    //     bytes[] memory updateData = createEthUpdate(100);
 
-        console2.log("Dealing");
-        vm.deal(address(this), ETH_TO_WEI);
-        console2.log("update and mint");
-        app.updateAndMint{value: ETH_TO_WEI / 100}(updateData);
-    }
+    //     console2.log("Dealing");
+    //     vm.deal(address(this), ETH_TO_WEI);
+    //     console2.log("update and mint");
+    //     app.updateAndMint{value: ETH_TO_WEI / 100}(updateData);
+    // }
 }

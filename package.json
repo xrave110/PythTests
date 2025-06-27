@@ -15,7 +15,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@pythnetwork/pyth-sdk-solidity": "^4.1.0"
+    "@pythnetwork/hermes-client": "^2.0.0",
+    "@pythnetwork/pyth-evm-js": "^1.83.0",
+    "@pythnetwork/pyth-sdk-solidity": "^4.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "viem": "^2.31.4"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-foundry": "^1.1.4",
