@@ -237,4 +237,94 @@ describe("Pyth Price Feed Integration on Base", function () {
       );
     }
   });
+
+  it("should fail update price using wrong Hermes data", async function () {
+    console.log("Starting Pyth price feed test");
+
+    // Get initial price (if available)
+    let initialPrice;
+    try {
+      const priceData = await pythContract.getPrice(ETH_USD_PRICE_FEED_ID);
+      initialPrice = {
+        price: priceData.price,
+        conf: priceData.conf,
+        expo: priceData.expo,
+        publishTime: priceData.publishTime,
+      };
+      const formattedPrice =
+        Number(initialPrice.price) * Math.pow(10, initialPrice.expo);
+      console.log(`Initial ETH/USD price: $${formattedPrice.toFixed(2)}`);
+      console.log(
+        `Initial publish time: ${new Date(
+          Number(initialPrice.publishTime) * 1000
+        ).toISOString()}`
+      );
+    } catch {
+      console.log("No initial price available, will update first");
+      initialPrice = null;
+    }
+
+    // Fetch update data from Hermes
+    console.log("Fetching price update data from Hermes");
+    const priceIds = [ETH_USD_PRICE_FEED_ID];
+    let priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds);
+    expect(priceUpdateData).to.be.an("array");
+    expect(priceUpdateData.length).to.be.greaterThan(0);
+    console.log(`Received ${priceUpdateData.length} update(s) from Hermes`);
+    console.log("Value: ", priceUpdateData[0][3]);
+    console.log("Value: ", priceUpdateData[0][4]);
+    console.log("Value: ", priceUpdateData[0][45]);
+    console.log("Value: ", priceUpdateData);
+
+    let bytes = ethers.utils.arrayify(priceUpdateData[0]);
+    bytes[10] = 0x42;
+    bytes[45] = 0x66;
+    priceUpdateData[0] = ethers.utils.hexlify(bytes); // change some value in data to check if updatePriceFeeds will fail
+
+    console.log("Value: ", priceUpdateData);
+    // Get update fee
+    const updateFee = await pythContract.getUpdateFee(priceUpdateData);
+    console.log(
+      `Update fee required: ${ethers.utils.formatEther(updateFee)} ETH`
+    );
+
+    // Check publish time vs timestamp before update
+    let updatedPriceData = await pythContract.getPriceNoOlderThan(
+      ETH_USD_PRICE_FEED_ID,
+      4000
+    );
+    console.log(
+      `1. Price ETH/USD=${updatedPriceData.price}, publish Time: ${updatedPriceData.publishTime}`
+    );
+
+    // Update price feeds
+    console.log("Updating price feeds on-chain");
+    // await pythContract.updatePriceFeeds(priceUpdateData, { value: updateFee });
+    await expect(
+      pythContract.updatePriceFeeds(priceUpdateData, { value: updateFee })
+    ).to.be.reverted; //revertedWithCustomError(pythContract, "InvalidUpdateData");
+
+    updatedPriceData = await pythContract.getPriceNoOlderThan(
+      ETH_USD_PRICE_FEED_ID,
+      4000
+    );
+    console.log(
+      `2. Price ETH/USD=${updatedPriceData.price}, publish Time: ${updatedPriceData.publishTime}`
+    );
+
+    // Update price feeds
+    console.log("Updating price feeds on-chain");
+    priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds);
+    await pythContract.updatePriceFeeds(priceUpdateData, { value: updateFee });
+    // await expect(
+    //   pythContract.updatePriceFeeds(priceUpdateData, { value: updateFee })
+    // ).to.be.reverted;
+    updatedPriceData = await pythContract.getPriceNoOlderThan(
+      ETH_USD_PRICE_FEED_ID,
+      4000
+    );
+    console.log(
+      `3. Price ETH/USD=${updatedPriceData.price}, publish Time: ${updatedPriceData.publishTime}`
+    );
+  });
 });
